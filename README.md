@@ -26,8 +26,7 @@ Full example: [example/]
 
 Make sure you choosed correct PLATFORM_STRING_MODE.
 
-Some packages are not bound to the architecture or Linux distro.
-This information must be passed down by the PLATFORM_STRING_MODE.
+If package is not bound to the architecture or Linux distro this context info must be passed down by the PLATFORM_STRING_MODE.
 
 
 
