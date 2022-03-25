@@ -36,10 +36,14 @@ FUNCTION(BA_PACKAGE_LIBRARY package_name version_tag)
         SET(suffix "d")
     ENDIF()
 
-    _BRINGAUTO_PACKAGE(${package_name} ${version_tag} "lib" "${suffix}-dev"
+    _BRINGAUTO_PACKAGE(${package_name} ${version_tag} "lib" "${suffix}-dev" output_var
         PLATFORM_STRING_MODE ${__PLATFORM_STRING_MODE}
         CACHE_ONLY           ${__CACHE_ONLY}
     )
+
+    SET(_t ${CMAKE_PREFIX_PATH})
+    LIST(APPEND _t "${output_var}")
+    SET(CMAKE_PREFIX_PATH ${_t} PARENT_SCOPE)
 
 ENDFUNCTION()
 
@@ -71,10 +75,14 @@ FUNCTION(BA_PACKAGE_EXECUTABLE package_name varsion_tag)
         SET(suffix "d")
     ENDIF()
 
-    _BRINGAUTO_PACKAGE(${package_name} ${version_tag} "" "${suffix}"
+    _BRINGAUTO_PACKAGE(${package_name} ${version_tag} "" "${suffix}" output_var
         PLATFORM_STRING_MODE ${__PLATFORM_STRING_MODE}
         CACHE_ONLY           ${__CACHE_ONLY}
     )
+
+    SET(_t ${CMAKE_PREFIX_PATH})
+    LIST(APPEND _t "${output_var}")
+    SET(CMAKE_PREFIX_PATH ${_t} PARENT_SCOPE)
 
 ENDFUNCTION()
 
@@ -92,7 +100,7 @@ ENDFUNCTION()
 #   [CACHE_ONLY {ON|OFF}]
 # )
 #
-FUNCTION(_BRINGAUTO_PACKAGE package_name version_tag prefix suffix)
+FUNCTION(_BRINGAUTO_PACKAGE package_name version_tag prefix suffix output_var)
     CMLIB_PARSE_ARGUMENTS(
         ONE_VALUE
             PLATFORM_STRING_MODE
@@ -157,7 +165,5 @@ FUNCTION(_BRINGAUTO_PACKAGE package_name version_tag prefix suffix)
         )
     ENDIF()
 
-    SET(_t ${CMAKE_PREFIX_PATH})
-    LIST(APPEND _t "${cache_path}")
-    SET(CMAKE_PREFIX_PATH ${_t} PARENT_SCOPE)
+    SET(${output_var} ${cache_path} PARENT_SCOPE)
 ENDFUNCTION()

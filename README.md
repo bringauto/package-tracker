@@ -20,6 +20,16 @@ Full example: [example/]
 - Package repository that is complain with [BringAuto Packager] package repository structure.
 
 
+## FAQ
+
+### Q: Package not found even if it exists in the remote repository
+
+Make sure you choosed correct PLATFORM_STRING_MODE.
+
+Some packages are not bound to the architecture or Linux distro.
+This information must be passed down by the PLATFORM_STRING_MODE.
+
+
 
 [BringAuto Packager]: https://github.com/bringauto/packager
 [CMake-lib]: https://github.com/cmakelib/cmakelib
