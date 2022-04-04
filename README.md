@@ -7,7 +7,7 @@ BringAuto package tracker based on [BringAuto Packager] and [CMake-lib]
 
 ```
 # Add package - download, cache and populate
-BA_PACKAGE_LIBRARY(nlohmann-json v3.10.5)
+BA_PACKAGE_LIBRARY(nlohmann-json v3.10.5 PLATFORM_STRING_MODE any_machine)
 # Find package as described in the library manual 
 FIND_PACKAGE(nlohmann_json 3.2.0 REQUIRED)
 ```

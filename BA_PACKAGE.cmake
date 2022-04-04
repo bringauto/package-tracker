@@ -17,6 +17,7 @@ FIND_PACKAGE(CMLIB COMPONENTS CMUTIL CMDEF)
 # <function>(
 #   <package_name>
 #   <version_tag>
+#   [OUTPUT_PATH_VAR <output_path_var_name>]
 #   [PLATFORM_STRING_MODE {"any_machine"}]
 #   [CACHE_ONLY {ON|OFF}]
 # )
@@ -25,6 +26,7 @@ FUNCTION(BA_PACKAGE_LIBRARY package_name version_tag)
     CMLIB_PARSE_ARGUMENTS(
         ONE_VALUE
             PLATFORM_STRING_MODE
+            OUTPUT_PATH_VAR
         OPTIONS
             CACHE_ONLY
         P_ARGN
@@ -45,6 +47,10 @@ FUNCTION(BA_PACKAGE_LIBRARY package_name version_tag)
     LIST(APPEND _t "${output_var}")
     SET(CMAKE_PREFIX_PATH ${_t} PARENT_SCOPE)
 
+    IF(__OUTPUT_PATH_VAR)
+        SET(${__OUTPUT_PATH_VAR} "${output_var}" PARENT_SCOPE)
+    ENDIF()
+
 ENDFUNCTION()
 
 
@@ -56,6 +62,7 @@ ENDFUNCTION()
 # <function>(
 #   <package_name>
 #   <version_tag>
+#   [OUTPUT_PATH_VAR <output_path_var_name>]
 #   [PLATFORM_STRING_MODE {"any_machine"}]
 #   [CACHE_ONLY {ON|OFF}]
 # )
@@ -64,6 +71,7 @@ FUNCTION(BA_PACKAGE_EXECUTABLE package_name varsion_tag)
     CMLIB_PARSE_ARGUMENTS(
         ONE_VALUE
             PLATFORM_STRING_MODE
+            OUTPUT_PATH_VAR
         OPTIONS
             CACHE_ONLY
         P_ARGN
@@ -83,6 +91,10 @@ FUNCTION(BA_PACKAGE_EXECUTABLE package_name varsion_tag)
     SET(_t ${CMAKE_PREFIX_PATH})
     LIST(APPEND _t "${output_var}")
     SET(CMAKE_PREFIX_PATH ${_t} PARENT_SCOPE)
+
+    IF(__OUTPUT_PATH_VAR)
+        SET(${__OUTPUT_PATH_VAR} "${output_var}" PARENT_SCOPE)
+    ENDIF()
 
 ENDFUNCTION()
 
