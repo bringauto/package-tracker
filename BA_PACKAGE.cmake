@@ -164,7 +164,10 @@ FUNCTION(_BRINGAUTO_PACKAGE package_name version_tag prefix suffix output_var)
     IF(NOT package_name_upper)
         MESSAGE(FATAL_ERROR "Invalid package name: ${package_name}")
     ENDIF()
-    SET(keywords BAPACK ${package_name_upper})
+
+    STRING(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
+
+    SET(keywords BAPACK ${package_name_upper} ${build_type_upper})
 
     SET(cache_path)
     IF(__CACHE_ONLY)
