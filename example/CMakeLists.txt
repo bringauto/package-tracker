@@ -44,5 +44,5 @@ CMDEF_INSTALL(TARGET test)
 
 # Install all shared library dependencies needed for json_target
 # and update RUNPATH.
-BRINGAUTO_PACKAGE_DEPS_IMPORTED(test)
+BA_PACKAGE_DEPS_IMPORTED(test)
 
