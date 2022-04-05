@@ -20,13 +20,19 @@ Full example: [example/]
 - Package repository that is complain with [BringAuto Packager] package repository structure.
 
 
+## Macros
+
+- `BA_PACKAGE_LIBRARY` downloads and init package build by [BringAuto Packager]
+- `BA_PACKAGE_DEPS_IMPORTED` installs all imported linked dependencies for a given target
+
+
 ## FAQ
 
 ### Q: Package not found even if it exists in the remote repository
 
-Make sure you choosed correct PLATFORM_STRING_MODE.
+Make sure you choosed correct `PLATFORM_STRING_MODE`.
 
-If package is not bound to the architecture or Linux distro this context info must be passed down by the PLATFORM_STRING_MODE.
+If package is not bound to the architecture or Linux distro this context info must be passed down by the `PLATFORM_STRING_MODE`.
 
 
 
