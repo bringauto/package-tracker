@@ -16,6 +16,9 @@ FIND_PACKAGE(CMLIB COMPONENTS CMUTIL CMDEF)
 # CACHE_ONLY - if specified no download is performed. The package
 # must be cached by previous of BA_PACKAGE_LIBRARY() without CACHE_ONLY switch.
 #
+# NO_DEBUG - use release, not debug version of the package (can be used if release and debug
+# variant are equal)
+#
 # PLATFORM_STRING_MODE - mode of platform string construction (platform string represents
 # id of the target platfrom for which we build...).
 #   - "aby_machine" - inform packager we use package that is not bound to the target architecture.
@@ -28,6 +31,7 @@ FIND_PACKAGE(CMLIB COMPONENTS CMUTIL CMDEF)
 #   [OUTPUT_PATH_VAR <output_path_var_name>]
 #   [PLATFORM_STRING_MODE {"any_machine"}]
 #   [CACHE_ONLY {ON|OFF}]
+#   [NO_DEBUG {ON|OFF}]
 # )
 #
 FUNCTION(BA_PACKAGE_LIBRARY package_name version_tag)
@@ -37,18 +41,20 @@ FUNCTION(BA_PACKAGE_LIBRARY package_name version_tag)
             OUTPUT_PATH_VAR
         OPTIONS
             CACHE_ONLY
+            NO_DEBUG
         P_ARGN
             ${ARGN}
     )
 
     SET(suffix)
-    IF("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    IF("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND (NOT __NO_DEBUG))
         SET(suffix "d")
     ENDIF()
 
     _BRINGAUTO_PACKAGE(${package_name} ${version_tag} "lib" "${suffix}-dev" output_var
         PLATFORM_STRING_MODE ${__PLATFORM_STRING_MODE}
         CACHE_ONLY           ${__CACHE_ONLY}
+        NO_DEBUG             ${__NO_DEBUG}
     )
 
     SET(_t ${CMAKE_PREFIX_PATH})
@@ -73,6 +79,7 @@ ENDFUNCTION()
 #   [OUTPUT_PATH_VAR <output_path_var_name>]
 #   [PLATFORM_STRING_MODE {"any_machine"}]
 #   [CACHE_ONLY {ON|OFF}]
+#   [NO_DEBUG {ON|OFF}]
 # )
 #
 FUNCTION(BA_PACKAGE_EXECUTABLE package_name varsion_tag)
@@ -82,18 +89,20 @@ FUNCTION(BA_PACKAGE_EXECUTABLE package_name varsion_tag)
             OUTPUT_PATH_VAR
         OPTIONS
             CACHE_ONLY
+            NO_DEBUG
         P_ARGN
             ${ARGN}
     )
 
     SET(suffix)
-    IF("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    IF("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND (NOT __NO_DEBUG))
         SET(suffix "d")
     ENDIF()
 
     _BRINGAUTO_PACKAGE(${package_name} ${version_tag} "" "${suffix}" output_var
         PLATFORM_STRING_MODE ${__PLATFORM_STRING_MODE}
         CACHE_ONLY           ${__CACHE_ONLY}
+        NO_DEBUG             ${__NO_DEBUG}
     )
 
     SET(_t ${CMAKE_PREFIX_PATH})
@@ -118,6 +127,7 @@ ENDFUNCTION()
 #   <version_tag>
 #   [PLATFORM_STRING_MODE {"any_machine"}]
 #   [CACHE_ONLY {ON|OFF}]
+#   [NO_DEBUG {ON|OFF}]
 # )
 #
 FUNCTION(_BRINGAUTO_PACKAGE package_name version_tag prefix suffix output_var)
@@ -126,6 +136,7 @@ FUNCTION(_BRINGAUTO_PACKAGE package_name version_tag prefix suffix output_var)
             PLATFORM_STRING_MODE
         OPTIONS
             CACHE_ONLY
+            NO_DEBUG
         P_ARGN
             ${ARGN}
     )
@@ -164,10 +175,12 @@ FUNCTION(_BRINGAUTO_PACKAGE package_name version_tag prefix suffix output_var)
     IF(NOT package_name_upper)
         MESSAGE(FATAL_ERROR "Invalid package name: ${package_name}")
     ENDIF()
+    SET(keywords BAPACK ${package_name_upper})
 
-    STRING(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
-
-    SET(keywords BAPACK ${package_name_upper} ${build_type_upper})
+    IF(NOT __NO_DEBUG)
+        STRING(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
+        LIST(APPEND keywords ${build_type_upper})
+    ENDIF()
 
     SET(cache_path)
     IF(__CACHE_ONLY)
