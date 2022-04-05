@@ -6,6 +6,7 @@
 # of the package.
 #
 
+FIND_PACKAGE(CMLIB COMPONENTS CMDEF REQUIRED)
 
 
 ##
@@ -55,7 +56,11 @@ FUNCTION(BA_PACKAGE_DEPS_IMPORTED target)
 			IF(NOT is_shared)
 				CONTINUE()
 			ENDIF()
-			INSTALL(FILES "${filepath}" DESTINATION ${install_dir})
+            # We need to do it manually, we cannot use INSTALL_IMPORTED_TARGETS
+			_BA_PACKAGE_DEPS_GET_ALL_SONAME_FILES("${filepath}" filepath_list)
+            FOREACH(_file IN LISTS filepath_list)
+                INSTALL(FILES "${_file}" DESTINATION ${install_dir})
+            ENDFOREACH()
 		ELSE()
 			BA_PACKAGE_DEPS_IMPORTED(${library} ${install_dir})
 			CONTINUE()
@@ -108,7 +113,7 @@ ENDFUNCTION()
 ## Helper
 #
 # It tries to get IMPORTED_LOCATION from the target.
-# 
+#
 # If the IMPORTED_LOCATION property does not exist try to find
 # IMPORTED_LOCATION_${CMAKE_BUILD_TYPE}.
 #
@@ -137,6 +142,25 @@ FUNCTION(_BA_PACKAGE_DEPS_GET_IMPORTED_LOCATION target output_var)
 	ENDIF()
 	IF(filepath)
 		SET(${output_var} "${filepath}" PARENT_SCOPE)
+		RETURN()
 	ENDIF()
 	UNSET(${output_var} PARENT_SCOPE)
+ENDFUNCTION()
+
+
+
+## Helper
+#
+# Get all potential SONAME library paths in the same directory
+# where the original library is located
+#
+# <function> (
+# 	<abs_path_to_library> <output_list_var>
+# )
+#
+FUNCTION(_BA_PACKAGE_DEPS_GET_ALL_SONAME_FILES abspath_to_library out_list_var)
+	GET_FILENAME_COMPONENT(abs_directory_path "${abspath_to_library}" DIRECTORY)
+	GET_FILENAME_COMPONENT(library_name       "${abspath_to_library}" NAME)
+	FILE(GLOB list_of_files LIST_DIRECTORIES OFF "${abs_directory_path}/${library_name}*")
+	SET(${out_list_var} "${list_of_files}" PARENT_SCOPE)
 ENDFUNCTION()
