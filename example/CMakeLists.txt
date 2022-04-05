@@ -11,7 +11,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.18)
 # If you do not have one just follow https://github.com/cmakelib/cmakelib
 #
 FIND_PACKAGE(CMLIB
-    COMPONENTS STORAGE
+    COMPONENTS STORAGE CMDEF
     REQUIRED
 )
 
@@ -20,12 +20,29 @@ FIND_PACKAGE(CMLIB
 #   https://gitlab.bringauto.com/bringauto-public/fleet-package-repository
 #
 BA_PACKAGE_LIBRARY(nlohmann-json v3.10.5 PLATFORM_STRING_MODE any_machine)
+BA_PACKAGE_LIBRARY(curl          v7.79.1)
 
 #
 # After package add we can use standard FIND_LIBRARY
 # as a documented by the package upstream
 #
 FIND_PACKAGE(nlohmann_json REQUIRED)
+FIND_PACKAGE(CURL          REQUIRED)
 
-ADD_EXECUTABLE(json_test main.cpp)
-TARGET_LINK_LIBRARIES(json_test PUBLIC nlohmann_json::nlohmann_json)
+# We need to update RPATH to install path of dependencicies
+SET(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
+
+CMDEF_ADD_EXECUTABLE(
+    TARGET test
+    SOURCES main.cpp
+    VERSION 1.8.5
+)
+TARGET_LINK_LIBRARIES(test PUBLIC nlohmann_json::nlohmann_json CURL::libcurl)
+
+# Install created target
+CMDEF_INSTALL(TARGET test)
+
+# Install all shared library dependencies needed for json_target
+# and update RUNPATH.
+BRINGAUTO_PACKAGE_DEPS_IMPORTED(test)
+

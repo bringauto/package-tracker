@@ -1,3 +1,9 @@
+##
+#
+# BringAuto Package script.
+#
+# Enable us to download and track dependencies build by BringAuto Packager.
+#
 
 FIND_PACKAGE(CMLIB COMPONENTS CMUTIL CMDEF)
 
@@ -13,6 +19,8 @@ FIND_PACKAGE(CMLIB COMPONENTS CMUTIL CMDEF)
 # PLATFORM_STRING_MODE - mode of platform string construction (platform string represents
 # id of the target platfrom for which we build...).
 #   - "aby_machine" - inform packager we use package that is not bound to the target architecture.
+#
+# OUTPUT_PATH_VAR - name of the variable where the absolute path of the package root will be stored. 
 #
 # <function>(
 #   <package_name>

@@ -16,7 +16,7 @@ Full example: [example/]
 
 ## Requirements
 
-- [CMake-lib] (with STORAGE component enabled)
+- [CMake-lib] with STORAGE component enabled. One of the storage entry must points to this repo.
 - Package repository that is complain with [BringAuto Packager] package repository structure.
 
 
