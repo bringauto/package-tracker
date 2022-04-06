@@ -141,8 +141,6 @@ FUNCTION(_BRINGAUTO_PACKAGE package_name version_tag prefix suffix output_var)
             ${ARGN}
     )
 
-    MESSAGE(STATUS "BA Package '${package_name}'")
-
     STRING(TOLOWER "${__PLATFORM_STRING_MODE}" plat_string_mode_lower)
 
     SET(machine)
@@ -193,6 +191,7 @@ FUNCTION(_BRINGAUTO_PACKAGE package_name version_tag prefix suffix output_var)
             MESSAGE(FATAL_ERROR "Package does not found: ${package_string}")
         ENDIF()
     ELSE()
+        _BA_PACKAGE_MESSAGE(DOWNLOAD ${package_name})
         CMLIB_DEPENDENCY(
             KEYWORDS ${keywords}
             TYPE ARCHIVE
@@ -202,4 +201,23 @@ FUNCTION(_BRINGAUTO_PACKAGE package_name version_tag prefix suffix output_var)
     ENDIF()
 
     SET(${output_var} ${cache_path} PARENT_SCOPE)
+ENDFUNCTION()
+
+
+
+## Helper
+#
+# Print preformetted message
+#
+# <function>(
+#   <action> <message>
+# )
+#
+FUNCTION(_BA_PACKAGE_MESSAGE action message)
+    SET(list_of_available_actions "DOWNLOAD")
+    LIST(FIND list_of_available_actions ${action} item)
+    IF(item EQUAL -1)
+        MESSAGE(FATAL_ERROR "BA_PACKAGE: Cannot print unknown action ${action}")
+    ENDIF()
+    MESSAGE(STATUS "BA PACKAGE [${action}]: ${message}")
 ENDFUNCTION()
