@@ -12,10 +12,10 @@ FIND_PACKAGE(CMLIB COMPONENTS CMDEF REQUIRED)
 
 ##
 #
-# Functio goes thru targetlink dependencies, gather all
+# Function goes thru target link dependencies, gather all
 # imported shared libraries, install them and repair RPATH.
 #
-# The install dir for all depdnencies is set from CMDEF_LIBARRY_INSTALL_DIR
+# The install dir for all dependencies is set from CMDEF_LIBARRY_INSTALL_DIR
 #
 # <function> (
 #   <target> <install_dir>
@@ -45,7 +45,13 @@ FUNCTION(BA_PACKAGE_DEPS_IMPORTED target)
 		STRING(TOUPPER "${CMAKE_BUILD_TYPE}" build_upper)
 		IF("${library_type}" STREQUAL "SHARED_LIBRARY")
 			INSTALL(IMPORTED_RUNTIME_ARTIFACTS ${library} DESTINATION ${install_dir})
-			_BA_PACKAGE_DEPS_GET_SONAME(${library} filenames)
+			_BA_PACKAGE_DEPS_GET_IMPORTED_LOCATION(${library} filepath)
+			_BA_PACKAGE_DEPS_GET_ALL_SONAME_FILES("${filepath}" filepath_list)
+			FOREACH(_file IN LISTS filepath_list)
+				GET_FILENAME_COMPONENT(filename "${_file}" NAME)
+				# TODO check if the file is symlink and point sto the right location
+				LIST(APPEND filenames "${filename}")
+			ENDFOREACH()
 		ELSEIF("${library_type}" STREQUAL "UNKNOWN_LIBRARY")
 			_BA_PACKAGE_DEPS_GET_IMPORTED_LOCATION(${library} filepath)
 			IF(NOT filepath)
@@ -57,9 +63,10 @@ FUNCTION(BA_PACKAGE_DEPS_IMPORTED target)
 			IF(NOT is_shared)
 				CONTINUE()
 			ENDIF()
-            # We need to do it manually, we cannot use INSTALL_IMPORTED_TARGETS
+            # We need to install files manually, we cannot use INSTALL_IMPORTED_TARGETS
 			_BA_PACKAGE_DEPS_GET_ALL_SONAME_FILES("${filepath}" filepath_list)
             FOREACH(_file IN LISTS filepath_list)
+				# TODO merge this code with SHARED_LIBRARY branch
                 INSTALL(FILES "${_file}" DESTINATION ${install_dir})
 				GET_FILENAME_COMPONENT(filename "${_file}" NAME)
 				# TODO check if the file is symlink and point sto the right location
@@ -69,12 +76,12 @@ FUNCTION(BA_PACKAGE_DEPS_IMPORTED target)
 			BA_PACKAGE_DEPS_IMPORTED(${library} ${install_dir})
 			CONTINUE()
 		ENDIF()
-
-		IF(NOT filename)
+		IF(NOT filenames)
 			CONTINUE()
 		ENDIF()
 
 		FOREACH(filename IN LISTS filenames)
+			MESSAGE(STATUS "FILENAME: ->>> ${filename}")
 			INSTALL(CODE "SET(library     ${filename})")
 			INSTALL(CODE "SET(install_dir ${install_dir})")
 			INSTALL(CODE [[
@@ -89,41 +96,6 @@ FUNCTION(BA_PACKAGE_DEPS_IMPORTED target)
 					ENDIF()
 				]])
 			ENDFOREACH()
-	ENDFOREACH()
-ENDFUNCTION()
-
-
-
-## Helper
-#
-# Get SONAME of the library.
-#
-# It tries to get IMPORTED_SONAME. If IMPORTED_SONAME
-# does not exist it tris to get IMPORTED_SONAME_*
-# for each supported build type (it takes CMAKE_BUILD_TYPE first)
-#
-# <function> (
-# 	<target> <output_var>
-# )
-#
-FUNCTION(_BA_PACKAGE_DEPS_GET_SONAME target output_var)
-	GET_TARGET_PROPERTY(soname ${library} IMPORTED_SONAME)
-	IF(NOT "${soname}" STREQUAL "soname-NOTFOUND")
-		SET(${output_var} ${soname} PARENT_SCOPE)
-		RETURN()
-	ENDIF()
-
-	SET(build_type_list ${CMDEF_BUILD_TYPE_LIST_UPPERCASE})
-	LIST(REMOVE_ITEM build_type_list ${build_type_upper})
-	LIST(PREPEND build_type_list ${build_type_upper})
-
-	FOREACH(build_type IN LISTS build_type_list)
-		STRING(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
-		GET_TARGET_PROPERTY(soname_buildtype ${library} IMPORTED_SONAME_${build_type})
-		IF("${soname_buildtype}" STREQUAL "soname_buildtype-NOTFOUND")
-			CONTINUE()
-		ENDIF()
-		SET(filename ${soname_buildtype})
 	ENDFOREACH()
 ENDFUNCTION()
 
