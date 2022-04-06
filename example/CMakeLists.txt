@@ -19,7 +19,7 @@ FIND_PACKAGE(CMLIB
 # Add package by a name specified in the registry:
 #   https://gitlab.bringauto.com/bringauto-public/fleet-package-repository
 #
-BA_PACKAGE_LIBRARY(nlohmann-json v3.10.5 PLATFORM_STRING_MODE any_machine)
+BA_PACKAGE_LIBRARY(nlohmann-json v3.10.5 PLATFORM_STRING_MODE any_machine NO_DEBUG ON)
 BA_PACKAGE_LIBRARY(curl          v7.79.1)
 
 #
@@ -46,3 +46,11 @@ CMDEF_INSTALL(TARGET test)
 # and update RUNPATH.
 BA_PACKAGE_DEPS_IMPORTED(test)
 
+# Create a package
+CMDEF_PACKAGE(
+    MAIN_TARGET test
+    VERSION     1.0.9
+)
+
+SET(CPACK_GENERATOR ZIP)
+INCLUDE(CPack)
