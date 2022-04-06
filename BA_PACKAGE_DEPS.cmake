@@ -9,6 +9,7 @@
 FIND_PACKAGE(CMLIB COMPONENTS CMDEF REQUIRED)
 
 
+
 ##
 #
 # Functio goes thru targetlink dependencies, gather all
@@ -40,11 +41,11 @@ FUNCTION(BA_PACKAGE_DEPS_IMPORTED target)
 
 		GET_TARGET_PROPERTY(library_type ${library} TYPE)
 
-		SET(filename)
+		SET(filenames)
 		STRING(TOUPPER "${CMAKE_BUILD_TYPE}" build_upper)
 		IF("${library_type}" STREQUAL "SHARED_LIBRARY")
 			INSTALL(IMPORTED_RUNTIME_ARTIFACTS ${library} DESTINATION ${install_dir})
-			GET_TARGET_PROPERTY(filename ${library} IMPORTED_SONAME_${build_upper})
+			_BA_PACKAGE_DEPS_GET_SONAME(${library} filenames)
 		ELSEIF("${library_type}" STREQUAL "UNKNOWN_LIBRARY")
 			_BA_PACKAGE_DEPS_GET_IMPORTED_LOCATION(${library} filepath)
 			IF(NOT filepath)
@@ -60,25 +61,69 @@ FUNCTION(BA_PACKAGE_DEPS_IMPORTED target)
 			_BA_PACKAGE_DEPS_GET_ALL_SONAME_FILES("${filepath}" filepath_list)
             FOREACH(_file IN LISTS filepath_list)
                 INSTALL(FILES "${_file}" DESTINATION ${install_dir})
+				GET_FILENAME_COMPONENT(filename "${_file}" NAME)
+				# TODO check if the file is symlink and point sto the right location
+				LIST(APPEND filenames "${filename}")
             ENDFOREACH()
 		ELSE()
 			BA_PACKAGE_DEPS_IMPORTED(${library} ${install_dir})
 			CONTINUE()
 		ENDIF()
 
-		INSTALL(CODE "SET(library     ${filename})")
-		INSTALL(CODE "SET(install_dir ${install_dir})")
-		INSTALL(CODE [[
-				FIND_PROGRAM(patchelf patchelf REQUIRED)
-				EXECUTE_PROCESS(
-					COMMAND           ${patchelf} --set-rpath '$ORIGIN' ${install_dir}/${library}
-					RESULT_VARIABLE    result
-					WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
-				)
-				IF(NOT result EQUAL 0)
-					MESSAGE(FATAL_ERROR "Cannot update RPATH for ${install_dir}/${library}")
-				ENDIF()
-			]])
+		IF(NOT filename)
+			CONTINUE()
+		ENDIF()
+
+		FOREACH(filename IN LISTS filenames)
+			INSTALL(CODE "SET(library     ${filename})")
+			INSTALL(CODE "SET(install_dir ${install_dir})")
+			INSTALL(CODE [[
+					FIND_PROGRAM(patchelf patchelf REQUIRED)
+					EXECUTE_PROCESS(
+						COMMAND           ${patchelf} --set-rpath '$ORIGIN' ${install_dir}/${library}
+						RESULT_VARIABLE    result
+						WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
+					)
+					IF(NOT result EQUAL 0)
+						MESSAGE(FATAL_ERROR "Cannot update RPATH for ${install_dir}/${library}")
+					ENDIF()
+				]])
+			ENDFOREACH()
+	ENDFOREACH()
+ENDFUNCTION()
+
+
+
+## Helper
+#
+# Get SONAME of the library.
+#
+# It tries to get IMPORTED_SONAME. If IMPORTED_SONAME
+# does not exist it tris to get IMPORTED_SONAME_*
+# for each supported build type (it takes CMAKE_BUILD_TYPE first)
+#
+# <function> (
+# 	<target> <output_var>
+# )
+#
+FUNCTION(_BA_PACKAGE_DEPS_GET_SONAME target output_var)
+	GET_TARGET_PROPERTY(soname ${library} IMPORTED_SONAME)
+	IF(NOT "${soname}" STREQUAL "soname-NOTFOUND")
+		SET(${output_var} ${soname} PARENT_SCOPE)
+		RETURN()
+	ENDIF()
+
+	SET(build_type_list ${CMDEF_BUILD_TYPE_LIST_UPPERCASE})
+	LIST(REMOVE_ITEM build_type_list ${build_type_upper})
+	LIST(PREPEND build_type_list ${build_type_upper})
+
+	FOREACH(build_type IN LISTS build_type_list)
+		STRING(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
+		GET_TARGET_PROPERTY(soname_buildtype ${library} IMPORTED_SONAME_${build_type})
+		IF("${soname_buildtype}" STREQUAL "soname_buildtype-NOTFOUND")
+			CONTINUE()
+		ENDIF()
+		SET(filename ${soname_buildtype})
 	ENDFOREACH()
 ENDFUNCTION()
 
