@@ -81,7 +81,6 @@ FUNCTION(BA_PACKAGE_DEPS_IMPORTED target)
 		ENDIF()
 
 		FOREACH(filename IN LISTS filenames)
-			MESSAGE(STATUS "FILENAME: ->>> ${filename}")
 			INSTALL(CODE "SET(library     ${filename})")
 			INSTALL(CODE "SET(install_dir ${install_dir})")
 			INSTALL(CODE [[
