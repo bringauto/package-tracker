@@ -191,7 +191,7 @@ FUNCTION(_BRINGAUTO_PACKAGE package_name version_tag prefix suffix output_var)
             MESSAGE(FATAL_ERROR "Package does not found: ${package_string}")
         ENDIF()
     ELSE()
-        _BA_PACKAGE_MESSAGE(DOWNLOAD ${package_name})
+        _BA_PACKAGE_MESSAGE(REGISTER ${package_name})
         CMLIB_DEPENDENCY(
             KEYWORDS ${keywords}
             TYPE ARCHIVE
@@ -207,14 +207,14 @@ ENDFUNCTION()
 
 ## Helper
 #
-# Print preformetted message
+# Print preformatted message
 #
 # <function>(
 #   <action> <message>
 # )
 #
 FUNCTION(_BA_PACKAGE_MESSAGE action message)
-    SET(list_of_available_actions "DOWNLOAD")
+    SET(list_of_available_actions "REGISTER")
     LIST(FIND list_of_available_actions ${action} item)
     IF(item EQUAL -1)
         MESSAGE(FATAL_ERROR "BA_PACKAGE: Cannot print unknown action ${action}")
