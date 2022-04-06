@@ -34,6 +34,16 @@ Make sure you choosed correct `PLATFORM_STRING_MODE`.
 
 If package is not bound to the architecture or Linux distro this context info must be passed down by the `PLATFORM_STRING_MODE`.
 
+### Q: Package conflict if I want to build my project by second build type
+
+If you want to use same cache path for Release and Debug build type
+you must ensure that the package differ between Debug/Release build config.
+
+If you have a package that has a same content for Debug and Release you need to
+use `NO_DEBUG ON` in `BA_PACKAGE_LIBRARY` otherwise the conflict occure.
+
+(Look at [example/] for quick overview)
+
 
 
 [BringAuto Packager]: https://github.com/bringauto/packager
