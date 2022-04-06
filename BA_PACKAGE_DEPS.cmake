@@ -86,6 +86,47 @@ ENDFUNCTION()
 
 ## Helper
 #
+# It tries to get IMPORTED_LOCATION from the target.
+#
+# If the IMPORTED_LOCATION property does not exist try to find
+# IMPORTED_LOCATION_${CMAKE_BUILD_TYPE}.
+#
+# IMPORTED_LOCATION_${CMAKE_BUILD_TYPE} does not exist try to crawl thru
+# all supported build types (except ${CMAKE_BUILD_TYPE}).
+# Function returns first existing IMPORTED_LOCATION_<build_type>.
+#
+# IF not IMPORTED_LOCATION found then the <output_var> is unset in the calling context.
+#
+# <function> (
+#   <target> <output_var>
+# )
+#
+FUNCTION(_BA_PACKAGE_DEPS_GET_IMPORTED_LOCATION target output_var)
+	SET(filepath)
+	STRING(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
+	_BA_PACKAGE_DEPS_GET_IMPORTED_LOCATION_FOR_BUILD_TYPE(${target} ${CMAKE_BUILD_TYPE} filepath)
+	IF(NOT filepath)
+		SET(build_type_list ${CMDEF_BUILD_TYPE_LIST_UPPERCASE})
+		LIST(REMOVE_ITEM build_type_list ${build_type_upper})
+		FOREACH(build_type IN LISTS build_type_list)
+			_BA_PACKAGE_DEPS_GET_IMPORTED_LOCATION_FOR_BUILD_TYPE(${target} ${build_type} filepath)
+			MESSAGE(STATUS "${target}/${build_type}:::${filepath}")
+			IF(NOT "${filepath}" STREQUAL "filepath-NOTFOUND")
+				BREAK()
+			ENDIF()
+		ENDFOREACH()
+	ENDIF()
+	IF(NOT "${filepath}" STREQUAL "filepath-NOTFOUND")
+		SET(${output_var} "${filepath}" PARENT_SCOPE)
+		RETURN()
+	ENDIF()
+	UNSET(${output_var} PARENT_SCOPE)
+ENDFUNCTION()
+
+
+
+## Helper
+#
 # Function returns IMPORTED_LOCATION (or IMPORTED_LOCATION_${build_type_uppercase})
 # in the ${output_var} variable.
 #
@@ -106,45 +147,6 @@ FUNCTION(_BA_PACKAGE_DEPS_GET_IMPORTED_LOCATION_FOR_BUILD_TYPE target build_type
 	ELSE()
 		UNSET(${output_var} PARENT_SCOPE)
 	ENDIF()
-ENDFUNCTION()
-
-
-
-## Helper
-#
-# It tries to get IMPORTED_LOCATION from the target.
-#
-# If the IMPORTED_LOCATION property does not exist try to find
-# IMPORTED_LOCATION_${CMAKE_BUILD_TYPE}.
-#
-# IMPORTED_LOCATION_${CMAKE_BUILD_TYPE} does not exist try to crawl thru
-# all supported build types (except ${CMAKE_BUILD_TYPE}).
-# Function returns first existing IMPORTED_LOCATION_<build_type>.
-#
-# IF not IMPORTED_LOCATION found then the <output_var> is unset in the calling context.
-#
-# <function> (
-#   <target> <output_var>
-# )
-#
-FUNCTION(_BA_PACKAGE_DEPS_GET_IMPORTED_LOCATION target output_var)
-	SET(filepath)
-	_BA_PACKAGE_DEPS_GET_IMPORTED_LOCATION_FOR_BUILD_TYPE(${target} ${CMAKE_BUILD_TYPE} filepath)
-	IF(NOT filepath)
-		SET(build_type_list ${CMDEF_BUILD_TYPE_LIST_UPPERCASE})
-		LIST(REMOVE_ITEM build_type_list ${CMAKE_BUILD_TYPE})
-		FOREACH(build_type IN LISTS build_type_list)
-			_BA_PACKAGE_DEPS_GET_IMPORTED_LOCATION_FOR_BUILD_TYPE(${target} ${build_type} filepath)
-			IF(filepath)
-				BREAK()
-			ENDIF()
-		ENDFOREACH()
-	ENDIF()
-	IF(filepath)
-		SET(${output_var} "${filepath}" PARENT_SCOPE)
-		RETURN()
-	ENDIF()
-	UNSET(${output_var} PARENT_SCOPE)
 ENDFUNCTION()
 
 
