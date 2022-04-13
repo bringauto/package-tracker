@@ -86,7 +86,7 @@ FUNCTION(BA_PACKAGE_DEPS_IMPORTED target)
 			INSTALL(CODE [[
 					FIND_PROGRAM(patchelf patchelf REQUIRED)
 					EXECUTE_PROCESS(
-						COMMAND           ${patchelf} --set-rpath '$ORIGIN' ${install_dir}/${library}
+						COMMAND           ${patchelf} --set-rpath $ORIGIN ${install_dir}/${library}
 						RESULT_VARIABLE    result
 						WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
 					)
