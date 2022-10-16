@@ -10,11 +10,9 @@ FIND_PACKAGE(CMLIB COMPONENTS CMDEF REQUIRED)
 
 
 
-
-SET(install_dir  "lib/${PROJECT_NAME}")
+SET(install_dir  "lib_ext/${PROJECT_NAME}")
 SET(library_name "${PROJECT_NAME}")
 SET(version      "${PROJECT_VERSION}")
-
 
 CMDEF_ADD_LIBRARY(
     LIBRARY_GROUP ${PROJECT_NAME}
@@ -70,15 +68,13 @@ INSTALL(CODE [[
         WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/"
     )
     EXECUTE_PROCESS(
-        COMMAND ${CMAKE_COMMAND} -E create_symlink "${new_library_filepath}" ${link_filepath}
+        COMMAND ${CMAKE_COMMAND} -E create_symlink "../../${new_library_filepath}" ${link_filepath}
         WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/"
     )
     EXECUTE_PROCESS(
-        COMMAND ${CMAKE_COMMAND} -E create_symlink "${new_library_filepath}" ${library_filepath}
+        COMMAND ${CMAKE_COMMAND} -E create_symlink "../../${new_library_filepath}" ${library_filepath}
         WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/"
     )
-    FILE(RELATIVE_PATH "${new_library_filepath}" ${CMAKE_CURRENT_LIST_DIR} "${library_filepath}")
-    MESSAGE(STATUS "-=-=-=-> ${ttt}")
 ]])
 
 SET(CPACK_GENERATOR ZIP)
