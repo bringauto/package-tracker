@@ -1,2 +1,2 @@
 
-int shared_out_of_dir() { return 21; }
+int shared_out_of_dir_symlink() { return 21; }

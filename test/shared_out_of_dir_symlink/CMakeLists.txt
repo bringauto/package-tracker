@@ -1,16 +1,16 @@
-SET(PROJECT_NAME    shared_out_of_dir_symlink)
-SET(PROJECT_VERSION 0.2.6)
-
-PROJECT(${PROJECT_NAME} C)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.21)
 
+SET(PROJECT_NAME shared_out_of_dir_symlink)
+PROJECT(${PROJECT_NAME} LANGUAGES C)
+
+SET(PROJECT_VERSION 1.58.9)
 SET(CMAKE_BUILD_TYPE Release)
 
 FIND_PACKAGE(CMLIB COMPONENTS CMDEF REQUIRED)
 
 
 
-SET(install_dir  "lib_ext/${PROJECT_NAME}")
+SET(install_dir  "lib/${PROJECT_NAME}")
 SET(library_name "${PROJECT_NAME}")
 SET(version      "${PROJECT_VERSION}")
 
@@ -36,12 +36,6 @@ CMDEF_INSTALL(TARGET ${PROJECT_NAME}-shared)
 SET(CMDEF_LIBRARY_INSTALL_DIR "${old_install_dir}"
     CACHE STRING "Overriden"
     FORCE
-)
-
-# Create a package
-CMDEF_PACKAGE(
-    MAIN_TARGET ${PROJECT_NAME}-shared
-    VERSION     ${PROJECT_VERSION}
 )
 
 SET(library_soname lib${library_name}.so.${version})
@@ -76,6 +70,12 @@ INSTALL(CODE [[
         WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/"
     )
 ]])
+
+# Create a package
+CMDEF_PACKAGE(
+    MAIN_TARGET ${PROJECT_NAME}-shared
+    VERSION     ${PROJECT_VERSION}
+)
 
 SET(CPACK_GENERATOR ZIP)
 INCLUDE(CPack)
