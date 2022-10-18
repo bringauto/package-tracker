@@ -1,16 +1,39 @@
 SET(PROJECT_NAME MyTestApp)
+#SET(CMAKE_BUILD_TYPE Release)
 
 PROJECT(${PROJECT_NAME} LANGUAGES C)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.21)
 
+
+FUNCTION(BUILD_INSTALL_DEPENDENCY install_dir dependency_cmake_path)
+    EXECUTE_PROCESS(
+        COMMAND ${CMAKE_COMMAND} "-DCMAKE_BUILD_TYPE=Release" "-DCMAKE_INSTALL_PREFIX=${install_dir}" .
+        WORKING_DIRECTORY "${dependency_cmake_path}"
+        RESULT_VARIABLE result
+    )
+    IF(NOT result EQUAL 0)
+        MESSAGE(FATAL_ERROR "Cannot configure dependency ${dependency_cmake_path}")
+    ENDIF()
+    FIND_PROGRAM(GNUMake make)
+    EXECUTE_PROCESS(
+        COMMAND  ${GNUMake} install
+        WORKING_DIRECTORY "${dependency_cmake_path}"
+    )
+    IF(NOT result EQUAL 0)
+        MESSAGE(FATAL_ERROR "Cannot compile dependency ${dependency_cmake_path}")
+    ENDIF()
+ENDFUNCTION()
+
 SET(PROJECT_VERSION 1.5.89)
-
-ADD_SUBDIRECTORY(shared_out_of_dir_symlink)
-ADD_SUBDIRECTORY(shared_with_soname)
-
-RETURN()
-
 FIND_PACKAGE(CMLIB COMPONENTS CMDEF REQUIRED)
+
+SET(DEPENDENCY_INSTALL_DIR "${CMAKE_CURRENT_LIST_DIR}/DependencyRoot")
+BUILD_INSTALL_DEPENDENCY("${DEPENDENCY_INSTALL_DIR}" ${CMAKE_CURRENT_LIST_DIR}/shared_out_of_dir_symlink)
+BUILD_INSTALL_DEPENDENCY("${DEPENDENCY_INSTALL_DIR}" ${CMAKE_CURRENT_LIST_DIR}/shared_with_soname)
+LIST(APPEND CMAKE_PREFIX_PATH "${DEPENDENCY_INSTALL_DIR}")
+
+FIND_PACKAGE(shared_out_of_dir_symlink 1.58.9 REQUIRED)
+FIND_PACKAGE(shared_with_soname        REQUIRED)
 
 CMDEF_ADD_EXECUTABLE(
     TARGET ${PROJECT_NAME}
@@ -19,12 +42,19 @@ CMDEF_ADD_EXECUTABLE(
 )
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC shared_out_of_dir_symlink-shared shared_with_soname-shared)
 
+
 CMDEF_INSTALL(TARGET ${PROJECT_NAME})
 
 # Create a package
 CMDEF_PACKAGE(
     MAIN_TARGET ${PROJECT_NAME}
     VERSION     ${PROJECT_VERSION}
+)
+
+INCLUDE("${CMAKE_CURRENT_LIST_DIR}/../BA_PACKAGE_DEPS.cmake")
+
+BA_PACKAGE_DEPS_IMPORTED(
+    ${PROJECT_NAME}
 )
 
 SET(CPACK_GENERATOR ZIP)
