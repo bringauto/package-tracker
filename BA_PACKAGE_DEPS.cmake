@@ -12,8 +12,51 @@ FIND_PACKAGE(CMLIB COMPONENTS CMDEF REQUIRED)
 
 ##
 #
+# We expect that the 'target' is installed and maintained by CMDE_INSTALL macro
+#
+# <function> (
+#	dd
+# )
+#
+FUNCTION(BA_PACKAGE_DEPS_SET_TARGET_RPATH target)
+	IF(NOT TARGET ${target})
+		MESSAGE(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: cannot repair RUNPATH for non existent target '${target}'")
+	ENDIF()
+
+	CMDEF_INSTALL_USED_FOR(TARGET ${target} OUTPUT_VAR cmdef_install_used)
+	IF(NOT cmdef_install_used)
+		MESSAGE(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: cannot repair RUNPATH for targets not installed by CMDEF_INSTALL")
+	ENDIF()
+
+	# we need to compute relative of install library path against target
+	# output install path. CMake FILE(RELATIVE_PATH ...) can work only with absolute paths
+	SET(absolute_path_prefix "/my/absolute/path/")
+	SET(library_path         "${absolute_path_prefix}/${CMDEF_LIBRARY_INSTALL_DIR}")
+	SET(target_output_path)
+
+	GET_TARGET_PROPERTY(target_type ${target} TYPE)
+	IF("${target_type}" STREQUAL "EXECUTABLE")
+		SET(target_output_path "${absolute_path_prefix}/${CMDEF_BINARY_INSTALL_DIR}")
+	ELSEIF("${target_type}" STREQUAL "SHARED_LIBRARY")
+		SET(target_output_path "${absolute_path_prefix}/${CMDEF_LIBRARY_INSTALL_DIR}")
+	ENDIF()
+
+	SET(runpath)
+	IF(target_output_path)
+		FILE(RELATIVE_PATH runpath "${target_output_path}" "${library_path}")
+	ELSE()
+		MESSAGE(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: unsupported CMake target type '${target_type}'")
+	ENDIF()
+
+	SET_TARGET_PROPERTIES(${target} PROPERTIES INSTALL_RPATH "$ORIGIN/${runpath}")
+
+ENDFUNCTION()
+
+
+##
+#
 # Function goes thru target link dependencies, gather all
-# imported shared libraries, install them and repair RUNPATH.
+# imported shared libraries, install them and repair RUNPATH for all installed librarties.
 #
 # The install dir for all dependencies is set from CMDEF_LIBARRY_INSTALL_DIR
 #
@@ -21,19 +64,24 @@ FIND_PACKAGE(CMLIB COMPONENTS CMDEF REQUIRED)
 #   <target> <install_dir>
 # )
 #
-FUNCTION(BA_PACKAGE_DEPS_IMPORTED target)
+FUNCTION(BA_PACKAGE_DEPS_INSTALL_IMPORTED target)
+
+	CMDEF_INSTALL_USED_FOR(TARGET ${target} OUTPUT_VAR cmdef_install_used)
+	IF(NOT cmdef_install_used)
+		MESSAGE(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: cannot install imported targets for target not installed with CMDEF_INSTALL")
+	ENDIF()
 
     _BA_PACKAGE_DEPS_GET_DEPENDENCIES_FILES(${target} filenames)
 
     LIST(REMOVE_DUPLICATES filenames)
 	FOREACH(filename IN LISTS filenames)
-		INSTALL(CODE "SET(library     ${filename})")
-		INSTALL(CODE "SET(install_dir ${CMDEF_LIBRARY_INSTALL_DIR})")
+		INSTALL(CODE "SET(_ba_package_deps_library     ${filename})")
+		INSTALL(CODE "SET(_ba_package_deps_install_dir ${CMDEF_LIBRARY_INSTALL_DIR})")
 		INSTALL(CODE [[
 			FIND_PROGRAM(patchelf patchelf REQUIRED)
-			MESSAGE(STATUS "patchelf pdate RUNPATH: ${install_dir}/${library}")
+			MESSAGE(STATUS "patchelf pdate RUNPATH: ${_ba_package_deps_install_dir}/${_ba_package_deps_library}")
 			EXECUTE_PROCESS(
-				COMMAND           ${patchelf} --set-rpath $ORIGIN ${install_dir}/${library}
+				COMMAND           ${patchelf} --set-rpath $ORIGIN ${_ba_package_deps_install_dir}/${_ba_package_deps_library}
 				RESULT_VARIABLE    result
 				WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
 			)
@@ -78,7 +126,7 @@ ENDFUNCTION()
 #   - If the set 'filenames' does not contain element representing symlink then all element in filenames
 #     must not be symlinks
 #
-# [Pitfals]
+# [Pitfalls]
 # - If there are multiple versions of same library the function installs them all and can breake the app
 #   (because of symlinks) 
 #
@@ -119,10 +167,10 @@ FUNCTION(_BA_PACKAGE_DEPS_GET_DEPENDENCIES_FILES target filenames_for_patchelf_v
 
 		GET_TARGET_PROPERTY(library_type ${library} TYPE)
 
-		IF("${library_type}" STREQUAL "SHARED_LIBRARY")
-			LIST(APPEND filenames "${filename}")
-			INSTALL(IMPORTED_RUNTIME_ARTIFACTS ${library} DESTINATION ${install_dir})
-		ELSEIF("${library_type}" STREQUAL "UNKNOWN_LIBRARY")
+		IF("${library_type}" STREQUAL "SHARED_LIBRARY" OR "${library_type}" STREQUAL "UNKNOWN_LIBRARY")
+	#		LIST(APPEND filenames "${filename}")
+		#	INSTALL(IMPORTED_RUNTIME_ARTIFACTS ${library} DESTINATION ${install_dir})
+		#ELSEIF("${library_type}" STREQUAL "UNKNOWN_LIBRARY")
             # We need to install files manually, we cannot use INSTALL_IMPORTED_TARGETS
 			STRING(REGEX MATCH "^([^.]+).so[.0-9]*$" is_shared "${filename}")
 			IF(NOT is_shared)
@@ -155,15 +203,16 @@ FUNCTION(_BA_PACKAGE_DEPS_GET_DEPENDENCIES_FILES target filenames_for_patchelf_v
 					LIST(APPEND filename_list          "${_name}")
 				ENDIF()
             ENDFOREACH()
-			FOREACH(real_filename symlink_name IN ZIP_LISTS symlink_filename_list symlink_list)
-				_BA_PACKAGE_DEPS_INSTALL_SHARED_LIBRARY_SYMLINK("${real_filename}" "${symlink_name}")
-			ENDFOREACH()
-		
+
 			LIST(REMOVE_DUPLICATES filepath_list_filtered)
 			FOREACH(_filepath IN LISTS filepath_list_filtered)
         		INSTALL(FILES "${_filepath}" DESTINATION ${install_dir})
 			ENDFOREACH()
 
+			FOREACH(real_filename symlink_name IN ZIP_LISTS symlink_filename_list symlink_list)
+				_BA_PACKAGE_DEPS_INSTALL_SHARED_LIBRARY_SYMLINK("${real_filename}" "${symlink_name}")
+			ENDFOREACH()
+		
 			LIST(REMOVE_DUPLICATES symlink_filename_list)
 			LIST(REMOVE_DUPLICATES filename_list)
             SET(filenames "${filenames};${filename_list};${symlink_filename_list};${symlink_list}")
@@ -271,17 +320,28 @@ ENDFUNCTION()
 # )
 #
 FUNCTION(_BA_PACKAGE_DEPS_INSTALL_SHARED_LIBRARY_SYMLINK shared_library_name symlink_name)
-	INSTALL(CODE "SET(library_name ${shared_library_name})")
-	INSTALL(CODE "SET(link_name    ${symlink_name})")
-	INSTALL(CODE "SET(install_dir  ${CMDEF_LIBRARY_INSTALL_DIR})")
+	INSTALL(CODE "SET(_ba_package_deps_library_name ${shared_library_name})")
+	INSTALL(CODE "SET(_ba_package_deps_link_name    ${symlink_name})")
+	INSTALL(CODE "SET(_ba_package_deps_install_dir  ${CMDEF_LIBRARY_INSTALL_DIR})")
 	INSTALL(CODE [[
 		EXECUTE_PROCESS(
-			COMMAND ${CMAKE_COMMAND} -E create_symlink ${library_name} ${link_name}
+			COMMAND ${CMAKE_COMMAND} -E create_symlink ${_ba_package_deps_library_name} ${_ba_package_deps_link_name}
 			RESULT_VARIABLE    result
-			WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/${install_dir}"
+			WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/${_ba_package_deps_install_dir}"
 		)
 		IF(NOT result EQUAL 0)
 			MESSAGE(FATAL_ERROR "Cannot cannot create symlink ")
 		ENDIF()
 	]])
+ENDFUNCTION()
+
+
+
+##
+#
+# <function> (
+#	
+# )
+#
+FUNCTION(_BA_PACKAGE_DEPS_CHECK_IF_ARRAYS_DOES_NOT_OVERLAP array_a array_b result)
 ENDFUNCTION()

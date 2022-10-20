@@ -13,11 +13,28 @@ FUNCTION(TEST_PRERUN)
         P_ARGN ${ARGN}
     )
 
+    MESSAGE(STATUS "Crushing symlinks")
+
     SET(library_name "${__LIBRARY_NAME}")
     SET(version      "${__VERSION}")
     SET(library_soname lib${library_name}.so.${version})
     SET(link_soname    lib${library_name}.so)
-    INSTALL(CODE "SET(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})")
+    INSTALL(CODE [[
+        IF(COMMAND CHECK_IF_VAR_EXIST)
+            MESASGE(FATAL_ERROR "CHECK_IF_VAR_EXIST exists. Cannot continue")
+        ENDIF()
+        MACRO(CHECK_IF_VAR_EXIST v)
+            IF(DEFINED ${v})
+                MESSAGE(FATAL_ERROR "Variable '${v}' olready defined")
+            ENDIF()
+        ENDMACRO()
+        CHECK_IF_VAR_EXIST(install_dir)
+        CHECK_IF_VAR_EXIST(link_soname)
+        CHECK_IF_VAR_EXIST(library_soname)
+        CHECK_IF_VAR_EXIST(link_filepath)
+        CHECK_IF_VAR_EXIST(library_filepath)
+        CHECK_IF_VAR_EXIST(new_library_filepath)
+    ]])
     INSTALL(CODE "SET(install_dir      ${__INSTALL_DIR})")
     INSTALL(CODE "SET(link_soname      ${link_soname})")
     INSTALL(CODE "SET(library_soname   ${library_soname})")
@@ -27,15 +44,27 @@ FUNCTION(TEST_PRERUN)
     INSTALL(CODE [[
         EXECUTE_PROCESS(
             COMMAND ${CMAKE_COMMAND} -E copy "${library_filepath}" "${new_library_filepath}"
+            RESULT_VARIABLE result
             WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/"
         )
+        IF(NOT result EQUAL 0)
+            MESSAGE(FATAL_ERROR "cannot copy file")
+        ENDIF()
         EXECUTE_PROCESS(
             COMMAND ${CMAKE_COMMAND} -E rm "${library_filepath}"
+            RESULT_VARIABLE result
             WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/"
         )
+        IF(NOT result EQUAL 0)
+            MESSAGE(FATAL_ERROR "cannot rm file")
+        ENDIF()
         EXECUTE_PROCESS(
             COMMAND ${CMAKE_COMMAND} -E create_symlink "../../${new_library_filepath}" ${library_filepath}
+            RESULT_VARIABLE result
             WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/"
         )
+        IF(NOT result EQUAL 0)
+            MESSAGE(FATAL_ERROR "cannot symlink")
+        ENDIF()
     ]])
 ENDFUNCTION()
