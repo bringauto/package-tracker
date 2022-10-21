@@ -32,6 +32,21 @@ FUNCTION(BUILD_INSTALL_DEPENDENCY install_dir version dependency_cmake_path)
     ENDIF()
 ENDFUNCTION()
 
+FUNCTION(CHECK_BUILD_DEPENDENCY_AGAINST_LIST file_list_getter directory_to_check)
+    FILE(GLOB_RECURSE _files
+        LIST_DIRECTORIES OFF
+        RELATIVE "${directory_to_check}"
+        "${directory_to_check}/*"
+    )
+    CMAKE_LANGUAGE(CALL ${file_list_getter} expected_file_list)
+    FOREACH(file IN LISTS _files)
+        LIST(FIND expected_file_list "${file}" found)
+        IF(found EQUAL -1)
+            MESSAGE(FATAL_ERROR "File not found ${file}")
+        ENDIF()
+    ENDFOREACH()
+ENDFUNCTION()
+
 SET(PROJECT_VERSION 1.5.89)
 FIND_PACKAGE(CMLIB COMPONENTS CMDEF REQUIRED)
 
@@ -43,21 +58,30 @@ INCLUDE("${TEST_PATH}")
 IF(NOT COMMAND TEST_PRERUN)
     MESSAGE(FATAL_ERROR "Test is not valid. TEST_PRERUN function not found.")
 ENDIF()
+IF(NOT COMMAND TEST_PRERUN_GET_EXPECTED_DEPENDENCY_FILE_LIST)
+    MESSAGE(FATAL_ERROR "Test is not valid. TEST_PRERUN_GET_EXPECTED_DEPENDENCY_FILE_LIST function not found.")
+ENDIF()
 TEST_PRERUN(
     VERSION     "1.2.3"
     INSTALL_DIR "${DEPENDENCY_INSTALL_DIR}/lib/shared_library_for_prerun"
     LIBRARY_NAME shared_library_for_prerun
+)
+CHECK_BUILD_DEPENDENCY_AGAINST_LIST(
+    TEST_PRERUN_GET_EXPECTED_DEPENDENCY_FILE_LIST
+    "${DEPENDENCY_INSTALL_DIR}"
 )
 
 
 
 LIST(APPEND CMAKE_PREFIX_PATH "${DEPENDENCY_INSTALL_DIR}")
 FIND_PACKAGE(shared_library  REQUIRED)
-FIND_LIBRARY(
-    shared_library_for_prerun shared_library_for_prerun
-    HINTS ${DEPENDENCY_INSTALL_DIR}/${CMDEF_LIBRARY_INSTALL_DIR}/shared_library_for_prerun
-    REQUIRED
-    NO_CACHE
+
+ADD_LIBRARY(shared_library_for_prerun-shared SHARED IMPORTED)
+SET_TARGET_PROPERTIES(shared_library_for_prerun-shared
+    PROPERTIES
+        IMPORTED_LOCATION ${DEPENDENCY_INSTALL_DIR}/${CMDEF_LIBRARY_INSTALL_DIR}/shared_library_for_prerun/libshared_library_for_prerun.so.1.2.3
+        IMPORTED_SONAME shared_library_for_prerun.so.1.2.3
+
 )
 
 CMDEF_ADD_EXECUTABLE(
@@ -67,7 +91,6 @@ CMDEF_ADD_EXECUTABLE(
 )
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC shared_library-shared shared_library_for_prerun-shared)
 
-
 CMDEF_INSTALL(TARGET ${PROJECT_NAME})
 
 # Create a package
@@ -75,6 +98,8 @@ CMDEF_PACKAGE(
     MAIN_TARGET ${PROJECT_NAME}
     VERSION     ${PROJECT_VERSION}
 )
+
+
 
 INCLUDE("${CMAKE_CURRENT_LIST_DIR}/../BA_PACKAGE_DEPS.cmake")
 
@@ -85,3 +110,4 @@ BA_PACKAGE_DEPS_SET_TARGET_RPATH(${PROJECT_NAME})
 
 SET(CPACK_GENERATOR ZIP)
 INCLUDE(CPack)
+

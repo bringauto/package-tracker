@@ -168,16 +168,14 @@ FUNCTION(_BA_PACKAGE_DEPS_GET_DEPENDENCIES_FILES target filenames_for_patchelf_v
 		GET_TARGET_PROPERTY(library_type ${library} TYPE)
 
 		IF("${library_type}" STREQUAL "SHARED_LIBRARY" OR "${library_type}" STREQUAL "UNKNOWN_LIBRARY")
-	#		LIST(APPEND filenames "${filename}")
-		#	INSTALL(IMPORTED_RUNTIME_ARTIFACTS ${library} DESTINATION ${install_dir})
-		#ELSEIF("${library_type}" STREQUAL "UNKNOWN_LIBRARY")
-            # We need to install files manually, we cannot use INSTALL_IMPORTED_TARGETS
-			STRING(REGEX MATCH "^([^.]+).so[.0-9]*$" is_shared "${filename}")
+            # We need to install files manually, we cannot use INSTALL_IMPORTED_TARGETS because of symlinks
+			STRING(REGEX MATCH "^([^.]+.so)[.0-9]*$" is_shared "${filename}")
 			IF(NOT is_shared)
 				CONTINUE()
 			ENDIF()
-			SET(library_name "${CMAKE_MATCH_0}")
-			_BA_PACKAGE_DEPS_GET_ALL_SONAME_FILES("${filepath}" filepath_list)
+			SET(library_name "${CMAKE_MATCH_1}")
+			GET_FILENAME_COMPONENT(filepath_directory "${filepath}" DIRECTORY)
+			_BA_PACKAGE_DEPS_GET_ALL_SONAME_FILES("${filepath_directory}/${library_name}" filepath_list)
 			SET(symlink_filename_list)
 			SET(symlink_list)
 			SET(filename_list)
@@ -198,11 +196,14 @@ FUNCTION(_BA_PACKAGE_DEPS_GET_DEPENDENCIES_FILES target filenames_for_patchelf_v
 						CMAKE_PATH(ABSOLUTE_PATH _real_file BASE_DIRECTORY "${_basepath}" NORMALIZE)
 					ENDIF()
 					LIST(APPEND filepath_list_filtered "${_real_file}")
+					LIST(APPEND filename_list          "${_filename}")
 				ELSE()
 					LIST(APPEND filepath_list_filtered "${_file}")
 					LIST(APPEND filename_list          "${_name}")
 				ENDIF()
             ENDFOREACH()
+
+			#_BA_PACKAGE_DEPS_REMOVE_SYMLINKS_NAMED_SAME_AS_REAL_FILE(symlink_filename_list filename_list)
 
 			LIST(REMOVE_DUPLICATES filepath_list_filtered)
 			FOREACH(_filepath IN LISTS filepath_list_filtered)
@@ -210,6 +211,9 @@ FUNCTION(_BA_PACKAGE_DEPS_GET_DEPENDENCIES_FILES target filenames_for_patchelf_v
 			ENDFOREACH()
 
 			FOREACH(real_filename symlink_name IN ZIP_LISTS symlink_filename_list symlink_list)
+				IF(real_filename STREQUAL symlink_name)
+					CONTINUE()
+				ENDIF()
 				_BA_PACKAGE_DEPS_INSTALL_SHARED_LIBRARY_SYMLINK("${real_filename}" "${symlink_name}")
 			ENDFOREACH()
 		
@@ -337,11 +341,17 @@ ENDFUNCTION()
 
 
 
-##
+## Helper
+#
+# Funtions removes symlinks that has same name as a file to which it points to.
 #
 # <function> (
-#	
+#	<symlink_filename_list_var>
+#	<filename_list_var>	
 # )
 #
-FUNCTION(_BA_PACKAGE_DEPS_CHECK_IF_ARRAYS_DOES_NOT_OVERLAP array_a array_b result)
-ENDFUNCTION()
+MACRO(_BA_PACKAGE_DEPS_REMOVE_SYMLINKS_NAMED_SAME_AS_REAL_FILE symlink_filename_list_var filename_list_var)
+	FOREACH(filename IN LISTS ${filename_list_var})
+		LIST(FILTER ${symlink_filename_list_var} EXCLUDE REGEX "^${filename}$")
+	ENDFOREACH()
+ENDMACRO()
