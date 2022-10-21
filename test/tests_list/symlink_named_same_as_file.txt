@@ -1,7 +1,29 @@
 #
-#
+# We copy pre_run library to the lib/ directory, delete all content of pre_run directory
+# and make soname symlink to pre_run loibrary in the lib/ directory
 #
 
+#
+# More documentation can be found inside the README
+#
+# Expected generated dependency set structure:
+#
+# ${INSTALL_DIR}
+#   ├── cmake
+#   │   ├── shared_libraryConfig.cmake
+#   │   ├── shared_libraryConfigVersion.cmake
+#   │   ├── shared_library-shared.cmake
+#   │   └── shared_library-shared-release.cmake
+#   ├── include
+#   │   └── shared_out_of_dir_symlink.h
+#   └── lib
+#       ├── libshared_library_for_prerun.so.1.2.3
+#       ├── shared_library
+#       │   ├── libshared_library.so -> libshared_library.so.5.67.1
+#       │   └── libshared_library.so.5.67.1
+#       └── shared_library_for_prerun
+#           └── libshared_library_for_prerun.so.1.2.3 -> ${INSTALL_DIR}/lib/shared_library_for_prerun/../libshared_library_for_prerun.so.1.2.3 
+#
 FUNCTION(TEST_PRERUN)
     CMLIB_PARSE_ARGUMENTS(
         ONE_VALUE
@@ -56,3 +78,22 @@ FUNCTION(TEST_PRERUN)
         MESSAGE(FATAL_ERROR "cannot symlink")
     ENDIF()
 ENDFUNCTION()
+
+
+
+#
+# Documentation can be found inside the README
+#
+MACRO(TEST_PRERUN_GET_EXPECTED_DEPENDENCY_FILE_LIST list_var)
+    LIST(APPEND ${list_var}
+        "cmake/shared_libraryConfig.cmake"
+        "cmake/shared_libraryConfigVersion.cmake"
+        "cmake/shared_library-shared.cmake"
+        "cmake/shared_library-shared-release.cmake
+        "include/shared_out_of_dir_symlink.h"
+        "lib/libshared_library_for_prerun.so.1.2.3"
+        "lib/shared_library/libshared_library.so"
+        "lib/shared_library/libshared_library.so.5.67.1"
+        "lib/shared_library_for_prerun/libshared_library_for_prerun.so.1.2.3"
+    )
+ENDMACRO()
