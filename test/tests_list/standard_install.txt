@@ -3,7 +3,7 @@
 #
 
 #
-# ${INSTALL_DIR}
+# ${DEPENDENCY_INSTALL_DIR}
 #  ├── cmake
 #  │   ├── shared_libraryConfig.cmake
 #  │   ├── shared_libraryConfigVersion.cmake
@@ -39,5 +39,40 @@ MACRO(TEST_PRERUN_GET_EXPECTED_DEPENDENCY_FILE_LIST list_var)
         "lib/shared_library/libshared_library.so.5.67.1"
         "lib/shared_library_for_prerun/libshared_library_for_prerun.so"
         "lib/shared_library_for_prerun/libshared_library_for_prerun.so.1.2.3"
+    )
+ENDMACRO()
+
+
+
+#
+# Documentation can be found inside the README
+#
+# Expected installed app structure
+#
+# ${INSTALL_DIR}
+#   ├── bin
+#   │   └── MyTestApp
+#   ├── cmake
+#   │   ├── MyTestApp.cmake
+#   │   ├── MyTestAppConfig.cmake
+#   │   ├── MyTestAppConfigVersion.cmake
+#   │   └── MyTestApp-release.cmake
+#   └── lib
+#       ├── libshared_library_for_prerun.so -> libshared_library_for_prerun.so.1.2.3
+#       ├── libshared_library_for_prerun.so.1.2.3
+#       ├── libshared_library.so -> libshared_library.so.5.67.1
+#       └── libshared_library.so.5.67.1
+#
+MACRO(TEST_GET_EXPECTED_INSTALLED_FILES_LIST list_var)
+    LIST(APPEND ${list_var}
+        "bin/MyTestApp"
+        "cmake/MyTestApp.cmake"
+        "cmake/MyTestAppConfig.cmake"
+        "cmake/MyTestAppConfigVersion.cmake"
+        "cmake/MyTestApp-release.cmake"
+        "lib/libshared_library_for_prerun.so"
+        "lib/libshared_library_for_prerun.so.1.2.3"
+        "lib/libshared_library.so"
+        "lib/libshared_library.so.5.67.1"
     )
 ENDMACRO()

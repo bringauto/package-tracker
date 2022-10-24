@@ -1,113 +1,49 @@
 
-IF(NOT DEFINED BA_PACKAGE_TEST_NAME)
-    MESSAGE(FATAL_ERROR "Please specify test to run by CMake variable BA_PACKAGE_TEST_NAME")
-ENDIF()
-
-SET(TEST_PATH "${CMAKE_CURRENT_LIST_DIR}/tests_list/${BA_PACKAGE_TEST_NAME}")
-IF(NOT EXISTS "${TEST_PATH}")
-    MESSAGE(FATAL_ERROR "Cannot find test ${TEST_PATH}")
-ENDIF()
-
-SET(PROJECT_NAME MyTestApp)
-
-PROJECT(${PROJECT_NAME} LANGUAGES C)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.21)
 
-FUNCTION(BUILD_INSTALL_DEPENDENCY install_dir version dependency_cmake_path)
-    EXECUTE_PROCESS(
-        COMMAND ${CMAKE_COMMAND} "-DCMAKE_BUILD_TYPE=Release" "-DLIBRARY_VERSION=${version}" "-DCMAKE_INSTALL_PREFIX=${install_dir}" .
-        WORKING_DIRECTORY "${dependency_cmake_path}"
-        RESULT_VARIABLE result
-    )
-    IF(NOT result EQUAL 0)
-        MESSAGE(FATAL_ERROR "Cannot configure dependency ${dependency_cmake_path}")
-    ENDIF()
-    FIND_PROGRAM(GNUMake make)
-    EXECUTE_PROCESS(
-        COMMAND  ${GNUMake} install
-        WORKING_DIRECTORY "${dependency_cmake_path}"
-    )
-    IF(NOT result EQUAL 0)
-        MESSAGE(FATAL_ERROR "Cannot compile dependency ${dependency_cmake_path}")
-    ENDIF()
-ENDFUNCTION()
+IF(NOT CMAKE_SCRIPT_MODE_FILE)
+    MESSAGE(FATAL_ERROR "Please, run list in CMake script mode!")
+ENDIF()
 
-FUNCTION(CHECK_BUILD_DEPENDENCY_AGAINST_LIST file_list_getter directory_to_check)
-    FILE(GLOB_RECURSE _files
-        LIST_DIRECTORIES OFF
-        RELATIVE "${directory_to_check}"
-        "${directory_to_check}/*"
+SET(TEST_BASE_PATH "${CMAKE_CURRENT_LIST_DIR}/tests_list")
+
+FUNCTION(RUN_AND_EVALUATE_TEST testbase_path testfile_name)
+    EXECUTE_PROCESS(
+        COMMAND           "git" "clean" "-xfd" "."
+        WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+        RESULT_VARIABLE   git_clean_result
     )
-    CMAKE_LANGUAGE(CALL ${file_list_getter} expected_file_list)
-    FOREACH(file IN LISTS _files)
-        LIST(FIND expected_file_list "${file}" found)
-        IF(found EQUAL -1)
-            MESSAGE(FATAL_ERROR "File not found ${file}")
+    IF(NOT git_clean_result EQUAL 0)
+        MESSAGE(FATAL_ERROR "Cannot clean up test directory!")
+    ENDIF()
+    SET(testapp_install_dir "${CMAKE_CURRENT_LIST_DIR}/TestAppInstallDir")
+    EXECUTE_PROCESS(
+        COMMAND "${CMAKE_COMMAND}" -DCMAKE_SCRIPT_MODE_FILE="${testfile_name}"
+            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_INSTALL_PREFIX="${testapp_install_dir}"
+            "app/"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+        RESULT_VARIABLE   test_result
+    )
+    IF(NOT test_result EQUAL 0)
+        MESSAGE(FATAL_ERROR "test '${testfile_name}' failed!")
+    ENDIF()
+    INCLUDE("${testbase_path}/${testfile_name}")
+    IF(NOT COMMAND TEST_GET_EXPECTED_INSTALLED_FILES_LIST)
+        MESSAGE(FATAL_ERROR "In the test ${testfile_name} the function TEST_GET_EXPECTED_INSTALLED_FILES_LIST is not found!")
+    ENDIF()
+    TEST_GET_EXPECTED_INSTALLED_FILES_LIST(expected_testapp_installed_file_list)
+    FOREACH(expected_file_path IN LISTS expected_testapp_installed_file_list)
+        IF(NOT EXISTS "${testapp_install_dir}/${expected_file_path}")
+            MESSAGE(FATAL_ERROR "Error: expected file '${expected_file_path}' is not in the testapp install directory")
         ENDIF()
     ENDFOREACH()
 ENDFUNCTION()
 
-SET(PROJECT_VERSION 1.5.89)
-FIND_PACKAGE(CMLIB COMPONENTS CMDEF REQUIRED)
-
-SET(DEPENDENCY_INSTALL_DIR "${CMAKE_CURRENT_LIST_DIR}/DependencyRoot")
-BUILD_INSTALL_DEPENDENCY("${DEPENDENCY_INSTALL_DIR}" 1.2.3 ${CMAKE_CURRENT_LIST_DIR}/lib/shared_library_for_prerun)
-BUILD_INSTALL_DEPENDENCY("${DEPENDENCY_INSTALL_DIR}" 5.67.1 ${CMAKE_CURRENT_LIST_DIR}/lib/shared_library)
-
-INCLUDE("${TEST_PATH}")
-IF(NOT COMMAND TEST_PRERUN)
-    MESSAGE(FATAL_ERROR "Test is not valid. TEST_PRERUN function not found.")
-ENDIF()
-IF(NOT COMMAND TEST_PRERUN_GET_EXPECTED_DEPENDENCY_FILE_LIST)
-    MESSAGE(FATAL_ERROR "Test is not valid. TEST_PRERUN_GET_EXPECTED_DEPENDENCY_FILE_LIST function not found.")
-ENDIF()
-TEST_PRERUN(
-    VERSION     "1.2.3"
-    INSTALL_DIR "${DEPENDENCY_INSTALL_DIR}/lib/shared_library_for_prerun"
-    LIBRARY_NAME shared_library_for_prerun
-)
-CHECK_BUILD_DEPENDENCY_AGAINST_LIST(
-    TEST_PRERUN_GET_EXPECTED_DEPENDENCY_FILE_LIST
-    "${DEPENDENCY_INSTALL_DIR}"
-)
 
 
+FILE(GLOB tests_list "${TEST_BASE_PATH}/*")
 
-LIST(APPEND CMAKE_PREFIX_PATH "${DEPENDENCY_INSTALL_DIR}")
-FIND_PACKAGE(shared_library  REQUIRED)
-
-ADD_LIBRARY(shared_library_for_prerun-shared SHARED IMPORTED)
-SET_TARGET_PROPERTIES(shared_library_for_prerun-shared
-    PROPERTIES
-        IMPORTED_LOCATION ${DEPENDENCY_INSTALL_DIR}/${CMDEF_LIBRARY_INSTALL_DIR}/shared_library_for_prerun/libshared_library_for_prerun.so.1.2.3
-        IMPORTED_SONAME shared_library_for_prerun.so.1.2.3
-
-)
-
-CMDEF_ADD_EXECUTABLE(
-    TARGET ${PROJECT_NAME}
-    SOURCES main.c
-    VERSION ${PROJECT_VERSION}
-)
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC shared_library-shared shared_library_for_prerun-shared)
-
-CMDEF_INSTALL(TARGET ${PROJECT_NAME})
-
-# Create a package
-CMDEF_PACKAGE(
-    MAIN_TARGET ${PROJECT_NAME}
-    VERSION     ${PROJECT_VERSION}
-)
-
-
-
-INCLUDE("${CMAKE_CURRENT_LIST_DIR}/../BA_PACKAGE_DEPS.cmake")
-
-BA_PACKAGE_DEPS_INSTALL_IMPORTED(
-    ${PROJECT_NAME}
-)
-BA_PACKAGE_DEPS_SET_TARGET_RPATH(${PROJECT_NAME})
-
-SET(CPACK_GENERATOR ZIP)
-INCLUDE(CPack)
-
+FOREACH(testfile IN LISTS tests_list)
+    
+ENDFOREACH()
