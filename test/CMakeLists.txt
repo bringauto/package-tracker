@@ -5,7 +5,7 @@ IF(NOT CMAKE_SCRIPT_MODE_FILE)
     MESSAGE(FATAL_ERROR "Please, run list in CMake script mode!")
 ENDIF()
 
-SET(TEST_BASE_PATH "${CMAKE_CURRENT_LIST_DIR}/tests_list")
+SET(TEST_BASE_PATH "${CMAKE_CURRENT_LIST_DIR}/app/tests_list")
 
 FUNCTION(RUN_AND_EVALUATE_TEST testbase_path testfile_name)
     EXECUTE_PROCESS(
@@ -18,7 +18,7 @@ FUNCTION(RUN_AND_EVALUATE_TEST testbase_path testfile_name)
     ENDIF()
     SET(testapp_install_dir "${CMAKE_CURRENT_LIST_DIR}/TestAppInstallDir")
     EXECUTE_PROCESS(
-        COMMAND "${CMAKE_COMMAND}" -DCMAKE_SCRIPT_MODE_FILE="${testfile_name}"
+        COMMAND "${CMAKE_COMMAND}" "-DBA_PACKAGE_TEST_NAME=${testfile_name}"
             -DCMAKE_BUILD_TYPE=Release
             -DCMAKE_INSTALL_PREFIX="${testapp_install_dir}"
             "app/"
@@ -42,8 +42,7 @@ ENDFUNCTION()
 
 
 
-FILE(GLOB tests_list "${TEST_BASE_PATH}/*")
-
-FOREACH(testfile IN LISTS tests_list)
-    
+FILE(GLOB tests_name_list RELATIVE "${TEST_BASE_PATH}" "${TEST_BASE_PATH}/*")
+FOREACH(testfile_name IN LISTS tests_name_list)
+    RUN_AND_EVALUATE_TEST("${TEST_BASE_PATH}" ${testfile_name}) 
 ENDFOREACH()
