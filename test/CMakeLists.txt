@@ -80,14 +80,18 @@ FUNCTION(DEPSTEST_RUN_AND_EVALUATE testbase_path testfile_name app_build_dir app
 ENDFUNCTION()
 
 #
-# <function> (
+# Function check if the RUNPATH for binary and all shared libraries
+# is set as expected.
+# If not FATAL_ERROR is ommited.
 #
+# <function> (
+#       app_install_dir // where the tesapp is installed
 # )
 #
-FUNCTION(DEPSTEST_CHECK_RUNPATH testapp_install_dir)
+FUNCTION(DEPSTEST_CHECK_RUNPATH app_install_dir)
     FIND_PROGRAM(readelf readelf REQUIRED)
-    SET(bin_dir "${testapp_install_dir}/${CMDEF_BINARY_INSTALL_DIR}")
-    SET(lib_dir "${testapp_install_dir}/${CMDEF_LIBRARY_INSTALL_DIR}")
+    SET(bin_dir "${app_install_dir}/${CMDEF_BINARY_INSTALL_DIR}")
+    SET(lib_dir "${app_install_dir}/${CMDEF_LIBRARY_INSTALL_DIR}")
     FILE(GLOB binfile_list "${bin_dir}/*")
     FILE(GLOB libfile_list "${lib_dir}/*")
 
@@ -95,6 +99,7 @@ FUNCTION(DEPSTEST_CHECK_RUNPATH testapp_install_dir)
     SET(expected_binfile_runpath "$ORIGIN/${expected_bin_file_path}")
     SET(expected_libfile_runpath "$ORIGIN")
 
+    # TODO make a function!
     FOREACH(binary_file_path IN LISTS binfile_list)
         EXECUTE_PROCESS(
             COMMAND ${readelf} -d "${binary_file_path}"
@@ -111,6 +116,24 @@ FUNCTION(DEPSTEST_CHECK_RUNPATH testapp_install_dir)
         SET(actual_runpath "${CMAKE_MATCH_1}")
         IF(NOT expected_binfile_runpath STREQUAL actual_runpath)
             MESSAGE(FATAL_ERROR "Invalid RUNPATH: '${actual_runpath}', expected: '${expected_binfile_runpath}'")
+        ENDIF()
+    ENDFOREACH()
+    FOREACH(library_file_path IN LISTS libfile_list)
+        EXECUTE_PROCESS(
+            COMMAND ${readelf} -d "${library_file_path}"
+            OUTPUT_VARIABLE readelf_output
+            RESULT_VARIABLE readelf_result
+        )
+        IF(NOT readelf_result EQUAL 0)
+            MESSAGE(FATAL_ERROR "Cannot run readelf! ${library_file_path}")
+        ENDIF()
+        STRING(REGEX MATCH "Library runpath: \\[([^\\)]+)\\]" runpath_exist "${readelf_output}")
+        IF(NOT runpath_exist)
+            MESSAGE(FATAL_ERROR "Cannot find RUNPATH be readelf. Error! ${readelf_output}")
+        ENDIF()
+        SET(actual_runpath "${CMAKE_MATCH_1}")
+        IF(NOT expected_libfile_runpath STREQUAL actual_runpath)
+            MESSAGE(FATAL_ERROR "Invalid RUNPATH: '${actual_runpath}', expected: '${expected_libfile_runpath}'")
         ENDIF()
     ENDFOREACH()
 ENDFUNCTION()
