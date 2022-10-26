@@ -2,6 +2,7 @@
 # BA_PACKAGE_DEPS Tests
 
 - [BA_PACKAGE_DEPS Tests](#ba_package_deps-tests)
+  - [Run Tests](#run-tests)
   - [Test application architecture](#test-application-architecture)
     - [Application Libraries (dependencies)](#application-libraries-dependencies)
     - [Application Libraries - use case altering](#application-libraries---use-case-altering)
@@ -11,6 +12,14 @@
 Test that dependency install management works as expected.
 
 The test consists of Test Application located in 'app/' directory.
+
+## Run Tests
+
+in the \<git_root>test/ directory run
+
+```cmake
+cmake -P ./run_tests.cmake
+```
 
 ## Test application architecture
 
