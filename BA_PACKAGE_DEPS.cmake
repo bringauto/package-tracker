@@ -203,8 +203,6 @@ FUNCTION(_BA_PACKAGE_DEPS_GET_DEPENDENCIES_FILES target filenames_for_patchelf_v
 				ENDIF()
             ENDFOREACH()
 
-			#_BA_PACKAGE_DEPS_REMOVE_SYMLINKS_NAMED_SAME_AS_REAL_FILE(symlink_filename_list filename_list)
-
 			LIST(REMOVE_DUPLICATES filepath_list_filtered)
 			FOREACH(_filepath IN LISTS filepath_list_filtered)
         		INSTALL(FILES "${_filepath}" DESTINATION ${install_dir})
@@ -338,20 +336,3 @@ FUNCTION(_BA_PACKAGE_DEPS_INSTALL_SHARED_LIBRARY_SYMLINK shared_library_name sym
 		ENDIF()
 	]])
 ENDFUNCTION()
-
-
-
-## Helper
-#
-# Funtions removes symlinks that has same name as a file to which it points to.
-#
-# <function> (
-#	<symlink_filename_list_var>
-#	<filename_list_var>	
-# )
-#
-MACRO(_BA_PACKAGE_DEPS_REMOVE_SYMLINKS_NAMED_SAME_AS_REAL_FILE symlink_filename_list_var filename_list_var)
-	FOREACH(filename IN LISTS ${filename_list_var})
-		LIST(FILTER ${symlink_filename_list_var} EXCLUDE REGEX "^${filename}$")
-	ENDFOREACH()
-ENDMACRO()
