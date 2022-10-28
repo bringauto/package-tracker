@@ -335,7 +335,7 @@ FUNCTION(_BA_PACKAGE_DEPS_INSTALL_SHARED_LIBRARY_SYMLINK shared_library_name sym
 			WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/${_ba_package_deps_install_dir}"
 		)
 		IF(NOT result EQUAL 0)
-			MESSAGE(FATAL_ERROR "Cannot cannot create symlink ")
+			MESSAGE(FATAL_ERROR "Cannot create symlink ${_ba_package_deps_link_name}")
 		ENDIF()
 	]])
 ENDFUNCTION()
