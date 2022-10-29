@@ -80,10 +80,16 @@ FUNCTION(BA_PACKAGE_DEPS_INSTALL_IMPORTED target)
 		INSTALL(CODE [[
 			FIND_PROGRAM(patchelf patchelf REQUIRED)
 			MESSAGE(STATUS "patchelf pdate RUNPATH: ${_ba_package_deps_install_dir}/${_ba_package_deps_library}")
+			SET(working_directory)
+			IF($ENV{DESTDIR})
+				SET(working_directory "$ENV{DESTDIR}/${CMAKE_INSTALL_PREFIX}")
+			ELSE()
+				SET(working_directory "${CMAKE_INSTALL_PREFIX}")
+			ENDIF()
 			EXECUTE_PROCESS(
 				COMMAND           ${patchelf} --set-rpath $ORIGIN ${_ba_package_deps_install_dir}/${_ba_package_deps_library}
 				RESULT_VARIABLE    result
-				WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
+				WORKING_DIRECTORY "${working_directory}"
 			)
 			IF(NOT result EQUAL 0)
 				MESSAGE(FATAL_ERROR "Cannot update RPATH for ${install_dir}/${library}")
@@ -329,10 +335,16 @@ FUNCTION(_BA_PACKAGE_DEPS_INSTALL_SHARED_LIBRARY_SYMLINK shared_library_name sym
 	INSTALL(CODE "SET(_ba_package_deps_link_name    ${symlink_name})")
 	INSTALL(CODE "SET(_ba_package_deps_install_dir  ${CMDEF_LIBRARY_INSTALL_DIR})")
 	INSTALL(CODE [[
+		SET(working_directory)
+		IF($ENV{DESTDIR})
+			SET(working_directory "$ENV{DESTDIR}/${CMAKE_INSTALL_PREFIX}/${_ba_package_deps_install_dir}")
+		ELSE()
+			SET(working_directory "${CMAKE_INSTALL_PREFIX}/${_ba_package_deps_install_dir}")
+		ENDIF()
 		EXECUTE_PROCESS(
 			COMMAND ${CMAKE_COMMAND} -E create_symlink ${_ba_package_deps_library_name} ${_ba_package_deps_link_name}
 			RESULT_VARIABLE    result
-			WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}/${_ba_package_deps_install_dir}"
+			WORKING_DIRECTORY "${working_directory}"
 		)
 		IF(NOT result EQUAL 0)
 			MESSAGE(FATAL_ERROR "Cannot create symlink ${_ba_package_deps_link_name}")
