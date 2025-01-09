@@ -92,7 +92,7 @@ ENDFUNCTION()
 #
 # Function check if the RUNPATH for binary and all shared libraries
 # is set as expected.
-# If not FATAL_ERROR is ommited.
+# If not FATAL_ERROR is omitted.
 #
 # <function> (
 #       app_install_dir // where the tesapp is installed
@@ -161,14 +161,18 @@ ENDFUNCTION()
 FUNCTION(DEPSTEST_CHECK_SYMLINKS app_install_dir)
     MESSAGE(STATUS "Checking symlinks.")
     SET(lib_dir "${app_install_dir}/${CMDEF_LIBRARY_INSTALL_DIR}")
-    FILE(GLOB libfile_list LIST_DIRECTORIES FALSE "${lib_dir}/*")
+    FILE(GLOB_RECURSE libfile_list LIST_DIRECTORIES FALSE "${lib_dir}/*")
     FOREACH(file IN LISTS libfile_list)
         IF(NOT IS_SYMLINK file)
             CONTINUE()
         ENDIF()
+        GET_FILENAME_COMPONENT(real_path "${file}" REALPATH)
+        IF(NOT EXISTS "${real_path}")
+            MESSAGE(FATAL_ERROR "Broken symlink detected: ${file} -> ${symlink_target}")
+        ENDIF()
         FILE(READ_SYMLINK "${file}" symlink_target)
         IF(IS_ABSOLUTE symlink_target)
-            MESSAGE(FATAL_ERROR "Symlink ${file} points to an absolute path. Forbidden!")
+            MESSAGE(FATAL_ERROR "Absolute symlink detected: ${file} -> ${symlink_target}\nAll symlinks must use relative paths.")
         ENDIF()
     ENDFOREACH()
 ENDFUNCTION()

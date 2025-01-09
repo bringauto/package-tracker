@@ -32,15 +32,15 @@ SET_TARGET_PROPERTIES(${PROJECT_NAME}-shared
 )
 
 SET(CMDEF_LIBRARY_INSTALL_DIR "${install_dir}"
-    CACHE STRING "Overriden"
+    CACHE STRING "Overridden"
     FORCE
 )
 CMDEF_INSTALL(
     TARGET ${PROJECT_NAME}-shared
-    NAMESAPCE ${PROJECT_NAME}-shared::
+    NAMESPACE ${PROJECT_NAME}-shared::
     NO_INSTALL_CONFIG ON
 )
 SET(CMDEF_LIBRARY_INSTALL_DIR "${old_install_dir}"
-    CACHE STRING "Overriden"
+    CACHE STRING "Overridden"
     FORCE
 )

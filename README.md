@@ -48,7 +48,7 @@ If package is not bound to the architecture or Linux distro this context info mu
 
 If you want to use same cache path for Release and Debug build type
 you must ensure that the package differ between Debug/Release build config
-amd does not have files with same path.
+and does not have files with the same path.
 
 If you have a package that has a same content for Debug and Release you need to
 use `NO_DEBUG ON` in `BA_PACKAGE_LIBRARY` otherwise the conflict occure.

@@ -12,10 +12,13 @@ FIND_PACKAGE(CMLIB COMPONENTS CMDEF REQUIRED)
 
 ##
 #
-# We expect that the 'target' is installed and maintained by CMDE_INSTALL macro
+# It sets the INSTALL_RUNPATH of the target to a
+# library directory specified by CMDEF_LIBRARY_INSTALL_DIR.
+#
+# It is expected the 'target' is installed and maintained by CMDE_INSTALL macro.
 #
 # <function> (
-#	dd
+#	<cmake_target>
 # )
 #
 FUNCTION(BA_PACKAGE_DEPS_SET_TARGET_RPATH target)
@@ -113,7 +116,7 @@ ENDMACRO()
 # Function go thru all runtime link dependencies and install them.
 # The install dir for all dependencies is set from CMDEF_LIBARRY_INSTALL_DIR
 #
-# [Datails]
+# [Details]
 # Function go thru all libraries mentonied in 'target' properties
 #   - LINK_LIBRARIES
 #   - INTERFACE_LINK_LIBRARIES
@@ -249,7 +252,7 @@ ENDFUNCTION()
 # all supported build types (except ${CMAKE_BUILD_TYPE}).
 # Function returns first existing IMPORTED_LOCATION_<build_type>.
 #
-# IF not IMPORTED_LOCATION found then the <output_var> is unset in the calling context.
+# If not IMPORTED_LOCATION found then the <output_var> is unset in the calling context.
 #
 # <function> (
 #   <target> <output_var>
