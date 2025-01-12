@@ -42,9 +42,13 @@ int main(int argc, char **argv) {
     curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &url);
     
     curl_easy_perform(curl);
+
+    std::cout << "response_code: " << response_code << std::endl;
+    std::cout << "elapsed:       " << elapsed << std::endl;
+    std::cout << "effective url: " << url << std::endl;
+
     curl_easy_cleanup(curl);
     curl = NULL;
-
     
     return 0;
 }
